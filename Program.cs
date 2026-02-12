@@ -37,8 +37,9 @@ namespace MySchemaApp
 
             Helper.CustomPrintTable(schemaTableRows);
 
-            Console.WriteLine("");
-            await NormalOptions();
+            Console.WriteLine("\nValfri knapp: Återgår till huvudmeny.");
+            Console.ReadKey();
+            return;
         }
 
         // Print menu options. Can't occur if there are no schemas.
@@ -54,6 +55,7 @@ namespace MySchemaApp
             bool running = true;
             while (running)
             {
+                Console.Clear();
                 Console.WriteLine("Välj ett alternativ:");
                 Console.WriteLine("1. Lägg till schema.");
                 Console.WriteLine("2. Ta bort schema.");
@@ -71,6 +73,7 @@ namespace MySchemaApp
 
                     case "2":
                         // Ta bort schema
+                        await RemoveSchema();
                         break;
 
                     case "3":
@@ -133,22 +136,69 @@ namespace MySchemaApp
             {
                 //Temp
                 //Maybe an else if with regex to check if the url is from schema.oru.se.
+                //Crashes if enter is pressed during delay.
                 Console.WriteLine("Ogiltig URL, försök igen.");
                 await Task.Delay(2000);
                 Console.Clear();
                 return;
             }
         }
+
+        static public async Task RemoveSchema()
+        {
+            Console.Clear();
+            List<Schema> schemas = SchemaManager.LoadSchemas();
+
+            // If there are no schemas, return to main menu.
+            if (schemas.Count == 0)
+            {
+                Console.Write("Inga scheman hittades, skickar dig till startmenyn.");
+                for (int i = 0; i < 2; i++)
+                {
+                    await Task.Delay(1250); Console.Write(".");
+                }
+                return;
+            }
+
+            // Displays all schemas with numbers, and asks the user to choose one to remove.
+            Console.WriteLine("Välj ett schema att visa:");
+            for (int i = 0; i < schemas.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + schemas[i].Title);
+            }
+
+
+            string choice = Console.ReadLine();
+            if (int.TryParse(choice, out int result)
+                && result < schemas.Count + 1
+                && result >= 0)
+            {
+                if (result == 0) return;
+
+                Console.Write("Raderar schemat \"" + schemas[result - 1].Title + "\".");
+                schemas.RemoveAt(result - 1);
+                for (int i = 0; i < 2; i++)
+                {
+                    await Task.Delay(500); Console.Write(".");
+                }
+                SchemaManager.SaveSchemas(schemas);
+                return;
+            }
+        }
+
         static public async Task ShowAllSchemas()
         {
             Console.Clear();
             List<Schema> schemas = SchemaManager.LoadSchemas();
+            Console.WriteLine("0. Tillbaka till startmenyn");
+
+            // Displays all schemas with numbers, and asks the user to choose one to remove.
             if (schemas.Count == 0)
             {
-                Console.Write("Inga scheman hittades, skickar dig till lägg till schema vyn.");
-                for (int i = 0; i < 4; i++)
+                Console.Write("Inga scheman hittades, skickar dig till startmenyn.");
+                for (int i = 0; i < 2; i++)
                 {
-                    await Task.Delay(1250); Console.Write(".");
+                    await Task.Delay(500); Console.Write(".");
                 }
                 return;
             }
@@ -157,11 +207,13 @@ namespace MySchemaApp
             {
                 Console.WriteLine(i + 1 + ". " + schemas[i].Title);
             }
+
             string choice = Console.ReadLine();
             if (int.TryParse(choice, out int result)
                 && result < schemas.Count + 1
-                && result > 0)
+                && result >= 0)
             {
+                if (result == 0)return;
                 await PrintSchema(schemas[result - 1]);
             }
         }
