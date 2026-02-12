@@ -9,6 +9,18 @@ namespace MySchemaApp
     {
         static async Task Main(string[] args)
         {
+            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
+            if (favoriteSchemas.Count > 0)
+            {
+                foreach (var s in favoriteSchemas)
+                {
+                    await PrintSchema(s);
+                }
+                Console.WriteLine("\nValfri knapp: Återgår till startmeny.");
+                Console.ReadKey();
+            }
+
             await NormalOptions();
             //List<Schema> schemas = SchemaManager.LoadSchemas();
 
@@ -36,10 +48,6 @@ namespace MySchemaApp
             var schemaTableRows = schemaTable.SelectNodes("./tr");
 
             Helper.CustomPrintTable(schemaTableRows);
-
-            Console.WriteLine("\nValfri knapp: Återgår till huvudmeny.");
-            Console.ReadKey();
-            return;
         }
 
         // Print menu options. Can't occur if there are no schemas.
@@ -78,11 +86,12 @@ namespace MySchemaApp
 
                     case "3":
                         // Visa alla scheman
-                        await ShowAllSchemas();
+                        await ViewSchemas();
                         break;
 
                     case "4":
                         // Hantera favoritscheman
+                        await FavoriteSchema();
                         break;
 
                     default:
@@ -94,6 +103,7 @@ namespace MySchemaApp
         }
         static public async Task AddSchema()
         {
+            // Lägg till funktionalitet så att man inte kan lägga till ett schema med samma url och samma titel som ett redan existerande schema.
             Console.Clear();
             Console.WriteLine("Skriv länken för schemat. " +
                 "\n\nLänken kan exempelvis se ut såhär: " +
@@ -160,13 +170,7 @@ namespace MySchemaApp
                 return;
             }
 
-            // Displays all schemas with numbers, and asks the user to choose one to remove.
-            Console.WriteLine("Välj ett schema att visa:");
-            for (int i = 0; i < schemas.Count; i++)
-            {
-                Console.WriteLine(i + 1 + ". " + schemas[i].Title);
-            }
-
+            ShowAllSchemaOptions(schemas, "Välj ett schema att ta bort:");
 
             string choice = Console.ReadLine();
             if (int.TryParse(choice, out int result)
@@ -186,7 +190,7 @@ namespace MySchemaApp
             }
         }
 
-        static public async Task ShowAllSchemas()
+        static public async Task ViewSchemas()
         {
             Console.Clear();
             List<Schema> schemas = SchemaManager.LoadSchemas();
@@ -202,11 +206,8 @@ namespace MySchemaApp
                 }
                 return;
             }
-            Console.WriteLine("Välj ett schema att visa:");
-            for (int i = 0; i < schemas.Count; i++)
-            {
-                Console.WriteLine(i + 1 + ". " + schemas[i].Title);
-            }
+            
+            ShowAllSchemaOptions(schemas, "Välj ett schema att visa:");
 
             string choice = Console.ReadLine();
             if (int.TryParse(choice, out int result)
@@ -215,6 +216,91 @@ namespace MySchemaApp
             {
                 if (result == 0)return;
                 await PrintSchema(schemas[result - 1]);
+
+                Console.WriteLine("\nValfri knapp: Återgår till huvudmeny.");
+                Console.ReadKey();
+                return;
+            }
+        }
+
+        static public async Task FavoriteSchema()
+        {
+            Console.Clear();
+            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> normalSchemas = schemas.Where(s => !s.IsFavorite).ToList();
+            List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
+
+            Console.WriteLine("Här kan du välja att \"Favorita\" ett schema.");
+            Console.WriteLine("När du favoritar ett schema kommer det att visas så fort du startar applikationen.");
+
+            Console.WriteLine("\n0. Tillbaka till startmenyn.\n");
+
+            if (normalSchemas.Count == 0)
+            {
+                Console.WriteLine("Alla scheman är redan favoriter! Om du vill ta bort ett schema från favoriter, välj det under de redan favoritmarkerade scheman nedan.");
+            }
+            else
+            {
+                Console.WriteLine("Scheman som inte är favoriter ännu:");
+                for (int i = 0; i < normalSchemas.Count; i++)
+                {
+                    Console.WriteLine(i + 1 + ". " + normalSchemas[i].Title);
+                }
+            }
+
+            if (favoriteSchemas.Count > 0)
+            {
+                Console.WriteLine("\nOm du vill \"De-Favorita\" ett schema väljer du en av dessa scheman.");
+                Console.WriteLine("Scheman som redan är favoriter:");
+                for (int i = 0; i < favoriteSchemas.Count; i++)
+                {
+                    Console.WriteLine(i + 1 + normalSchemas.Count + ". " + favoriteSchemas[i].Title);
+                }
+            }
+
+            string choice = Console.ReadLine();
+            if (int.TryParse(choice, out int result)
+                && result < schemas.Count + 1
+                && result >= 0)
+            {
+                if (result == 0) return;
+                if (result <= normalSchemas.Count) //schemas har 2 saker, 1 är normal 1 är favorit.
+                                                   //index 1 är normal 0 är favorit.
+                                                   //därmed är 0 = normal och 1 = favorit.
+                {
+                    // Favorita a normal schema
+                    // Då måste vi hitta indexet i den riktiga listan, som är schemas, och inte normalSchemas.
+
+                    normalSchemas[result - 1].IsFavorite = true;
+                    Console.WriteLine("Favoritar schemat \"" + normalSchemas[result - 1].Title + ".");
+                }
+                else
+                {
+                    // De-Favorita a favorite schema
+                    favoriteSchemas[result - 1 - normalSchemas.Count].IsFavorite = false;
+                    Console.WriteLine("De-Favoritar schemat \"" + favoriteSchemas[result - 1 - normalSchemas.Count].Title + ".");
+                }
+                SchemaManager.SaveSchemas(schemas);
+
+                // Buffer
+                Console.Write("Skickar dig till startmenyn.");
+                for (int i = 0; i < 2; i++)
+                {
+                    await Task.Delay(500); Console.Write(".");
+                }
+                return;
+            }
+
+            Console.ReadKey();
+        }
+        
+        static public void ShowAllSchemaOptions(List<Schema> schemas, string headermsg)
+        {
+            // Displays all schemas with numbers, and asks the user to choose one to remove.
+            Console.WriteLine(headermsg);
+            for (int i = 0; i < schemas.Count; i++)
+            {
+                Console.WriteLine(i + 1 + ". " + schemas[i].Title);
             }
         }
     }
