@@ -10,12 +10,13 @@ namespace MySchemaApp
     {
         public string Title { get; set; }
         public string Url { get; set; }
+        public bool IsFavorite { get; set; } = false;
         public Schema() { }
-        public Schema(string title, string url)
-        {
-            Title = title;
-            Url = url;
-        }
+        //public Schema(string title, string url)
+        //{
+        //    Title = title;
+        //    Url = url;
+        //}
 
     }
 }
