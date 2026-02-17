@@ -104,53 +104,69 @@ namespace MySchemaApp
         static public async Task AddSchema()
         {
             // Lägg till funktionalitet så att man inte kan lägga till ett schema med samma url och samma titel som ett redan existerande schema.
-            Console.Clear();
-            Console.WriteLine("Skriv länken för schemat. " +
-                "\n\nLänken kan exempelvis se ut såhär: " +
-                "\nhttps://schema.oru.se/setup/jsp/Schema.jsp?startDatum=2026-01-19&intervallTyp=m&intervallAntal=6&sokMedAND=false&sprak=SV&resurser=k.IK205G-V2062V26-%2C");
-            Console.Write("\nDin länk: ");
+            bool schemaAdded = false;
+            List<Schema> schemas = SchemaManager.LoadSchemas();
 
-            string url = Console.ReadLine().Trim();
-
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            while (!schemaAdded)
             {
                 Console.Clear();
-                Console.Write("Skriv en titel för schemat: ");
+                Console.WriteLine("0. Tillbaka till startmenyn");
+                Console.WriteLine("Skriv länken för schemat. " +
+                    "\n\nLänken kan exempelvis se ut såhär: " +
+                    "\nhttps://schema.oru.se/setup/jsp/Schema.jsp?startDatum=2026-01-19&intervallTyp=m&intervallAntal=6&sokMedAND=false&sprak=SV&resurser=k.IK205G-V2062V26-%2C");
+                Console.Write("\nDin länk: ");
 
-                string title = Console.ReadLine().Trim();
-                if (!string.IsNullOrEmpty(title))
+                string url = Console.ReadLine().Trim();
+                if (url == "0") return; //Back to main menu.
+                if (schemas.Any(s => s.Url == url))
                 {
-                    List<Schema> schemas = SchemaManager.LoadSchemas();
-                    schemas.Add(new Schema { Title = title, Url = url });
-                    SchemaManager.SaveSchemas(schemas);
-                    
-                    Console.Clear();
-                    Console.Write("Schemat har lagts till! Skickar dig till startmenyn");
-                    for (int i = 0; i < 3; i++)
+                    Console.WriteLine("Det finns redan ett schema med den URL:en, försök igen.");
+                    await Task.Delay(1000);
+                    continue;
+                }
+
+                if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri)
+                && uri.Host == "schema.oru.se")
+                {
+
+                    bool titleChosen = false;
+                    while (!titleChosen)
                     {
-                        await Task.Delay(1250); 
-                        Console.Write(".");
+                        Console.Clear();
+                        Console.WriteLine("0. Tillbaka till startmenyn");
+                        Console.Write("Skriv en titel för schemat: ");
+
+                        string title = Console.ReadLine().Trim();
+                        if (title == "0") return;
+
+                        if (!string.IsNullOrEmpty(title)) //Saves the Schema
+                        {
+                            schemas.Add(new Schema { Title = title, Url = url });
+                            SchemaManager.SaveSchemas(schemas);
+
+                            Console.Clear();
+                            Console.Write("Schemat har lagts till! Skickar dig till startmenyn");
+                            for (int i = 0; i < 3; i++)
+                            {
+                                await Task.Delay(1250);
+                                Console.Write(".");
+                            }
+                            titleChosen = true;
+                            schemaAdded = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Titeln kan inte vara tom, försök igen.");
+                            await Task.Delay(1000);
+                        }
                     }
-                    return;
+
                 }
                 else
                 {
-                    Console.WriteLine("Titeln kan inte vara tom, försök igen.");
-                    await Task.Delay(2000);
-                    Console.Clear();
-                    return;
+                    Console.WriteLine("Kunde inte hitta det schemat, försök igen.");
+                    await Task.Delay(1000);
                 }
-
-            }
-            else
-            {
-                //Temp
-                //Maybe an else if with regex to check if the url is from schema.oru.se.
-                //Crashes if enter is pressed during delay.
-                Console.WriteLine("Ogiltig URL, försök igen.");
-                await Task.Delay(2000);
-                Console.Clear();
-                return;
             }
         }
 
@@ -206,7 +222,7 @@ namespace MySchemaApp
                 }
                 return;
             }
-            
+
             ShowAllSchemaOptions(schemas, "Välj ett schema att visa:");
 
             string choice = Console.ReadLine();
@@ -214,7 +230,7 @@ namespace MySchemaApp
                 && result < schemas.Count + 1
                 && result >= 0)
             {
-                if (result == 0)return;
+                if (result == 0) return;
                 await PrintSchema(schemas[result - 1]);
 
                 Console.WriteLine("\nValfri knapp: Återgår till huvudmeny.");
@@ -293,7 +309,7 @@ namespace MySchemaApp
 
             Console.ReadKey();
         }
-        
+
         static public void ShowAllSchemaOptions(List<Schema> schemas, string headermsg)
         {
             // Displays all schemas with numbers, and asks the user to choose one to remove.
