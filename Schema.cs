@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MySchemaApp
+﻿namespace MySchemaApp
 {
     public class Schema
     {
@@ -12,11 +6,5 @@ namespace MySchemaApp
         public string Url { get; set; }
         public bool IsFavorite { get; set; } = false;
         public Schema() { }
-        //public Schema(string title, string url)
-        //{
-        //    Title = title;
-        //    Url = url;
-        //}
-
     }
 }

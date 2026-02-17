@@ -1,16 +1,10 @@
 ﻿using HtmlAgilityPack;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MySchemaApp
 {
-    internal class Helper
+    internal class Printer
     {
         static public string CleanText(string text)
         {
@@ -28,7 +22,7 @@ namespace MySchemaApp
         {
             int dummyYear = DateTime.Now.Year; // Won't be displayed, just needed for parsing.
 
-            // Jan didn't work for swedish culture, Maj didn't work for english culture, so I'm using both.
+            // Jan didn't work for swedish culture (it wants jan), Maj didn't work for english culture (it wants May), so I'm using both.
             var cultures = new[]
             {
                 new CultureInfo("sv-SE"), // Swedish
@@ -88,7 +82,7 @@ namespace MySchemaApp
             if (string.IsNullOrEmpty(CleanText(cells[1].InnerText))) cells[1].InnerHtml = lastDay;
             if (string.IsNullOrEmpty(CleanText(cells[2].InnerText))) cells[2].InnerHtml = lastDate.ToString("d MMM"); // "1 Jan". 5 Maj -> 5 May because of culture issues. Low prio problem.
             if (!string.IsNullOrEmpty(CleanText(cells[5].InnerText))) cells[5].InnerHtml = "*GRUPP " + CleanText(cells[5].InnerText + "*"); // Calls attention to groups.
-            cells.Remove(6); // Remove Teacher
+            cells.Remove(6); // Removes Teacher column.
             cells.Remove(0); // Removes mystery column that says "A" during exam days.
 
             foreach (var cell in cells)
