@@ -4,9 +4,18 @@ namespace MySchemaApp
 {
     internal class Program
     {
+        static readonly SchemaManager schemaManager = new();
+        static readonly SettingsManager settingsManager = new();
         static async Task Main(string[] args)
         {
-            List<Schema> schemas = SchemaManager.LoadSchemas();
+            Settings settings = new Settings();
+            settings.CustomizedTable = true;
+            settings.StartDateToday = true;
+            settings.StartDateTodayStartupOnly = true;
+            
+            settingsManager.Save(settings);
+
+            List<Schema> schemas = schemaManager.Schemas;
             List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
             if (favoriteSchemas.Count > 0)
             {
@@ -106,7 +115,7 @@ namespace MySchemaApp
         static public async Task AddSchema()
         {
             bool schemaAdded = false;
-            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> schemas = schemaManager.Schemas;
 
             while (!schemaAdded)
             {
@@ -143,7 +152,7 @@ namespace MySchemaApp
                         if (!string.IsNullOrEmpty(title)) //Saves the Schema
                         {
                             schemas.Add(new Schema { Title = title, Url = url });
-                            SchemaManager.SaveSchemas(schemas);
+                            schemaManager.Save(schemas);
 
                             Console.Clear();
                             Console.Write("Schemat har lagts till! Skickar dig till startmenyn");
@@ -174,7 +183,7 @@ namespace MySchemaApp
         static public async Task RemoveSchema()
         {
             Console.Clear();
-            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> schemas = schemaManager.Schemas;
 
             // If there are no schemas, return to main menu.
             if (schemas.Count == 0)
@@ -187,6 +196,7 @@ namespace MySchemaApp
                 return;
             }
 
+            Console.WriteLine("0. Tillbaka till startmenyn");
             // Prints the saved schemas' titles.
             ShowAllSchemaTitles(schemas, "Välj ett schema att ta bort:");
 
@@ -203,7 +213,7 @@ namespace MySchemaApp
                 {
                     await Task.Delay(500); Console.Write(".");
                 }
-                SchemaManager.SaveSchemas(schemas);
+                schemaManager.Save(schemas);
                 return;
             }
         }
@@ -211,7 +221,7 @@ namespace MySchemaApp
         static public async Task ViewSchemas()
         {
             Console.Clear();
-            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> schemas = schemaManager.Schemas;
             Console.WriteLine("0. Tillbaka till startmenyn");
 
             // Displays all schemas with numbers, and asks the user to choose one to remove.
@@ -245,7 +255,7 @@ namespace MySchemaApp
         static public async Task FavoriteSchema()
         {
             Console.Clear();
-            List<Schema> schemas = SchemaManager.LoadSchemas();
+            List<Schema> schemas = schemaManager.Schemas;
             List<Schema> normalSchemas = schemas.Where(s => !s.IsFavorite).ToList();
             List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
 
@@ -298,7 +308,7 @@ namespace MySchemaApp
                     Console.WriteLine("De-Favoritar schemat \"" + favoriteSchemas[result - 1 - normalSchemas.Count].Title + ".");
                 }
 
-                SchemaManager.SaveSchemas(schemas);
+                schemaManager.Save(schemas);
 
                 // Buffer
                 Console.Write("Skickar dig till startmenyn.");
