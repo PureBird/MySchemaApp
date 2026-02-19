@@ -8,22 +8,26 @@ namespace MySchemaApp
         static readonly SettingsManager settingsManager = new();
         static async Task Main(string[] args)
         {
-            Settings settings = new Settings();
-            settings.CustomizedTable = true;
-            settings.StartDateToday = true;
-            settings.StartDateTodayStartupOnly = true;
-            
-            settingsManager.Save(settings);
+            //settings.CustomizedTable = true;
+            //settings.StartDateToday = true;
+            //settings.StartDateTodayStartupOnly = true;
 
             List<Schema> schemas = schemaManager.Schemas;
             List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
             if (favoriteSchemas.Count > 0)
             {
-                foreach (var s in favoriteSchemas)
+                foreach (var schema in favoriteSchemas)
                 {
-                    await PrintSchema(s);
+                    if (settingsManager.Settings.StartDateTodayStartupOnly 
+                        || settingsManager.Settings.StartDateTodayOnAll)
+                    {
+                        // Settings wants this schema to use startdate=today.
+                        schema.Url = Printer.StartDateToday(schema.Url);
+                    }
+
+                    await PrintSchema(schema);
                 }
-                Console.WriteLine("\nValfri knapp: Återgår till startmeny.");
+                Console.WriteLine("\nTryck enter för att återgå till startmenyn.");
                 Console.ReadKey();
             }
 
@@ -58,13 +62,6 @@ namespace MySchemaApp
 
         static public async Task NormalOptions()
         {
-            //Console.WriteLine("Välj ett alternativ:");
-            //Console.WriteLine("0. Avsluta programmet");
-            //Console.WriteLine("1. Se hela schemat med alla kolumner");
-            //Console.WriteLine("2. Visa schema");
-            //Console.WriteLine("3. Lägg till schema");
-            //Console.WriteLine("4. Ta bort schema");
-
             bool running = true;
             while (running)
             {
@@ -102,6 +99,7 @@ namespace MySchemaApp
 
                     case "5":
                         // Handling settings
+                        await ChangeSettings();
                         break;
 
                     default:
@@ -319,6 +317,64 @@ namespace MySchemaApp
                 return;
             }
             Console.ReadKey();
+        }
+
+        static public async Task ChangeSettings()
+        {
+            var settings = settingsManager.Settings;
+            bool running = true;
+            while (running)
+            {
+                Console.Clear();
+                Console.WriteLine("Här kan du ändra inställningar!");
+
+                Console.WriteLine("0. Tillbaka till huvudmenyn.");
+
+                Console.WriteLine("1. Jag vill ha scheman som endast visar det viktiga: " + 
+                    (settings.CustomizedTable ? "Ja." : "Nej."));
+
+                Console.WriteLine("2. Jag vill att ALLA mina scheman ska starta från dagens datum: " +
+                    (settings.StartDateTodayOnAll ? "Ja." : "Nej."));
+
+                Console.WriteLine("3. Jag vill att startup-schemat startar från dagens datum: " +
+                    (settings.StartDateTodayOnAll ? "Ja (pga. ovanstående Ja)." :
+                    (settings.StartDateTodayStartupOnly ? "Ja." : "Nej.")));
+
+                Console.WriteLine("4. Mer information om inställningar."); //Senare
+
+                string choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "0":
+                        running = false;
+                        break;
+
+                    case "1":
+                        settings.CustomizedTable = !settings.CustomizedTable;
+                        break;
+
+                    case "2":
+                        settings.StartDateTodayOnAll = !settings.StartDateTodayOnAll;
+                        break;
+
+                    case "3":
+                        settings.StartDateTodayStartupOnly = !settings.StartDateTodayStartupOnly;
+                        break;
+
+                    case "4":
+                        //Senare
+                        break;
+                    
+                    default:
+                        break;
+                }
+
+                //Console.ReadKey();
+            }
+            settingsManager.Save(settings);
+            
+
         }
 
         static public void ShowAllSchemaTitles(List<Schema> schemas, string headermsg)

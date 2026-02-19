@@ -6,6 +6,15 @@ namespace MySchemaApp
 {
     internal class Printer
     {
+        static public string StartDateToday(string url)
+        {
+            //Probably not a valid url.
+            if (!url.Contains("startDatum")) return url;
+
+            //Replaces startDatum=2020-01-01 with startDatum=idag.
+            string updatedUrl = Regex.Replace(url, @"(startDatum=)[^&]*", "$1idag");
+            return updatedUrl;
+        }
         static public string CleanText(string text)
         {
             // Removes &nbsp;, &amp;, and such.

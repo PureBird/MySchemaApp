@@ -9,7 +9,7 @@ namespace MySchemaApp
     public class Settings
     {
         public bool CustomizedTable { get; set; } = true;
-        public bool StartDateToday { get; set; } = false;
+        public bool StartDateTodayOnAll { get; set; } = false;
         public bool StartDateTodayStartupOnly { get; set; } = true;
         public Settings() { }
     }
