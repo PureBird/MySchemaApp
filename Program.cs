@@ -8,10 +8,6 @@ namespace MySchemaApp
         static readonly SettingsManager settingsManager = new();
         static async Task Main(string[] args)
         {
-            //settings.CustomizedTable = true;
-            //settings.StartDateToday = true;
-            //settings.StartDateTodayStartupOnly = true;
-
             List<Schema> schemas = schemaManager.Schemas;
             List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
             if (favoriteSchemas.Count > 0)
@@ -25,7 +21,8 @@ namespace MySchemaApp
                         schema.Url = Printer.StartDateToday(schema.Url);
                     }
 
-                    await PrintSchema(schema);
+                    if (settingsManager.Settings.CustomizedTable) await PrintCustomizedSchema(schema);
+                    else await PrintDefaultSchema(schema);
                 }
                 Console.WriteLine("\nTryck enter för att återgå till startmenyn.");
                 Console.ReadKey();
@@ -33,9 +30,9 @@ namespace MySchemaApp
 
             await NormalOptions();
         }
-        static public async Task PrintSchema(Schema schema)
+        static async Task PrintCustomizedSchema(Schema schema)
         {
-            Console.Clear();
+            FullClearConsole();
             Console.WriteLine("Schema: " + schema.Title);
 
             using var http = new HttpClient();
@@ -60,23 +57,63 @@ namespace MySchemaApp
             Printer.CustomPrintTable(schemaTableRows);
         }
 
-        static public async Task NormalOptions()
+        static async Task PrintDefaultSchema(Schema schema)
+        {
+            FullClearConsole();
+            Console.WriteLine("Schema: " + schema.Title);
+
+            using var http = new HttpClient();
+
+            var html = await http.GetStringAsync(schema.Url);
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            var schemaTable = doc.DocumentNode.SelectSingleNode("//table[@class='schemaTabell']");
+            if (schemaTable == null)
+            {
+                // If this is null the user managed to input a faulty url.
+                Console.WriteLine("Kunde inte hitta ett schema på sidan.");
+                Console.WriteLine("Är länken korrekt?");
+                await Task.Delay(1500);
+                return;
+            }
+
+            var schemaTableRows = schemaTable.SelectNodes("./tr");
+
+            Printer.DefaultPrintTable(schemaTableRows);
+        }
+
+        static void FullClearConsole()
+        {
+            // Removes scrollback because Console.Clear() only deletes
+            // what's currently in view not including what's seen when scrolling up.
+            Console.Write("\x1b[3J");
+            Console.Clear();
+        }
+        static async Task NormalOptions()
         {
             bool running = true;
             while (running)
             {
-                Console.Clear();
+                FullClearConsole();
                 Console.WriteLine("Välj ett alternativ:");
+                Console.WriteLine("0. Stäng av applikationen.");
                 Console.WriteLine("1. Lägg till schema.");
                 Console.WriteLine("2. Ta bort schema.");
                 Console.WriteLine("3. Visa alla scheman.");
                 Console.WriteLine("4. Hantera favoritscheman");
                 Console.WriteLine("5. Hantera inställningar");
-                Console.WriteLine("Övriga val kommer att avsluta programmet.");
 
                 string choice = Console.ReadLine().Trim();
                 switch (choice)
                 {
+                    case "0":
+                        // Exits the app.
+                        Environment.Exit(0);
+                        running = false;
+                        break;
+
                     case "1":
                         // Add schema
                         await AddSchema();
@@ -99,25 +136,22 @@ namespace MySchemaApp
 
                     case "5":
                         // Handling settings
-                        await ChangeSettings();
+                        ChangeSettings();
                         break;
 
                     default:
-                        // Exits the app.
-                        Environment.Exit(0);
-                        running = false;
                         break;
                 }
             }
         }
-        static public async Task AddSchema()
+        static async Task AddSchema()
         {
             bool schemaAdded = false;
             List<Schema> schemas = schemaManager.Schemas;
 
             while (!schemaAdded)
             {
-                Console.Clear();
+                FullClearConsole();
                 Console.WriteLine("0. Tillbaka till startmenyn");
                 Console.WriteLine("Skriv länken för schemat. " +
                     "\n\nLänken kan exempelvis se ut såhär: " +
@@ -140,7 +174,7 @@ namespace MySchemaApp
                     bool titleChosen = false;
                     while (!titleChosen)
                     {
-                        Console.Clear();
+                        FullClearConsole();
                         Console.WriteLine("0. Tillbaka till startmenyn");
                         Console.Write("Skriv en titel för schemat: ");
 
@@ -152,7 +186,7 @@ namespace MySchemaApp
                             schemas.Add(new Schema { Title = title, Url = url });
                             schemaManager.Save(schemas);
 
-                            Console.Clear();
+                            FullClearConsole();
                             Console.Write("Schemat har lagts till! Skickar dig till startmenyn");
                             for (int i = 0; i < 3; i++)
                             {
@@ -178,9 +212,9 @@ namespace MySchemaApp
             }
         }
 
-        static public async Task RemoveSchema()
+        static async Task RemoveSchema()
         {
-            Console.Clear();
+            FullClearConsole();
             List<Schema> schemas = schemaManager.Schemas;
 
             // If there are no schemas, return to main menu.
@@ -216,9 +250,9 @@ namespace MySchemaApp
             }
         }
 
-        static public async Task ViewSchemas()
+        static async Task ViewSchemas()
         {
-            Console.Clear();
+            FullClearConsole();
             List<Schema> schemas = schemaManager.Schemas;
             Console.WriteLine("0. Tillbaka till startmenyn");
 
@@ -228,7 +262,8 @@ namespace MySchemaApp
                 Console.Write("Inga scheman hittades, skickar dig till startmenyn.");
                 for (int i = 0; i < 2; i++)
                 {
-                    await Task.Delay(500); Console.Write(".");
+                    await Task.Delay(500); 
+                    Console.Write(".");
                 }
                 return;
             }
@@ -242,7 +277,14 @@ namespace MySchemaApp
                 && result >= 0)
             {
                 if (result == 0) return;
-                await PrintSchema(schemas[result - 1]);
+
+                Schema schema = schemas[result - 1];
+
+                // Settings wants this schema to use startdate=today.
+                if (settingsManager.Settings.StartDateTodayOnAll) schema.Url = Printer.StartDateToday(schema.Url);
+
+                if (settingsManager.Settings.CustomizedTable) await PrintCustomizedSchema(schemas[result - 1]);
+                else await PrintDefaultSchema(schemas[result - 1]);
 
                 Console.WriteLine("\nValfri knapp: Återgår till huvudmeny.");
                 Console.ReadKey();
@@ -250,9 +292,9 @@ namespace MySchemaApp
             }
         }
 
-        static public async Task FavoriteSchema()
+        static async Task FavoriteSchema()
         {
-            Console.Clear();
+            FullClearConsole();
             List<Schema> schemas = schemaManager.Schemas;
             List<Schema> normalSchemas = schemas.Where(s => !s.IsFavorite).ToList();
             List<Schema> favoriteSchemas = schemas.Where(s => s.IsFavorite).ToList();
@@ -319,13 +361,13 @@ namespace MySchemaApp
             Console.ReadKey();
         }
 
-        static public async Task ChangeSettings()
+        static void ChangeSettings()
         {
             var settings = settingsManager.Settings;
             bool running = true;
             while (running)
             {
-                Console.Clear();
+                FullClearConsole();
                 Console.WriteLine("Här kan du ändra inställningar!");
 
                 Console.WriteLine("0. Tillbaka till huvudmenyn.");
@@ -369,15 +411,11 @@ namespace MySchemaApp
                     default:
                         break;
                 }
-
-                //Console.ReadKey();
             }
             settingsManager.Save(settings);
-            
-
         }
 
-        static public void ShowAllSchemaTitles(List<Schema> schemas, string headermsg)
+        static void ShowAllSchemaTitles(List<Schema> schemas, string headermsg)
         {
             // Displays all schemas with numbers, and asks the user to choose one to remove.
             // This only prints the schemas, the logic and choices are handled in whatever calls this method.

@@ -68,14 +68,14 @@ namespace MySchemaApp
             }
         }
 
-        static public void BasicPrintTable(HtmlNodeCollection rows)
+        static public void DefaultPrintTable(HtmlNodeCollection rows)
         {
             if (rows == null) return;
             foreach (var row in rows)
             {
                 var cells = row.SelectNodes("td");
                 if (cells == null) continue;
-                BasicPrintTableRowData(cells);
+                DefaultPrintTableRowData(cells);
             }
         }
 
@@ -83,17 +83,25 @@ namespace MySchemaApp
         // displayed. I don't care much for who the day's teacher might be.
         static public void CustomPrintTableRowData(HtmlNodeCollection cells, string lastDay, DateTime lastDate)
         {
-            if (cells.Count == 1) // Probably a header row.
+            // Probably a header row like "Vecka 4, 2026"
+            if (cells.Count == 1)
             {
-                Console.WriteLine(CleanText(cells[0].InnerText)); return;
+                Console.WriteLine(CleanText(cells[0].InnerText)); 
+                return;
             }
 
+            // Bigger explanation in CustomPrintTable(HtmlNodeCollection rows).
+            // TLDR: applies value when there are none.
             if (string.IsNullOrEmpty(CleanText(cells[1].InnerText))) cells[1].InnerHtml = lastDay;
-            if (string.IsNullOrEmpty(CleanText(cells[2].InnerText))) cells[2].InnerHtml = lastDate.ToString("d MMM"); // "1 Jan". 5 Maj -> 5 May because of culture issues. Low prio problem.
-            if (!string.IsNullOrEmpty(CleanText(cells[5].InnerText))) cells[5].InnerHtml = "*GRUPP " + CleanText(cells[5].InnerText + "*"); // Calls attention to groups.
+            if (string.IsNullOrEmpty(CleanText(cells[2].InnerText))) cells[2].InnerHtml = lastDate.ToString("d MMM"); // "1 Jan". 5 Maj -> 5 May because of culture issues. Low prio bug.
+
+            // Calls attention to groups.
+            if (!string.IsNullOrEmpty(CleanText(cells[5].InnerText))) cells[5].InnerHtml = "*GRUPP " + CleanText(cells[5].InnerText + "*"); 
+            
             cells.Remove(6); // Removes Teacher column.
             cells.Remove(0); // Removes mystery column that says "A" during exam days.
 
+            // Prints text for each cell.
             foreach (var cell in cells)
             {
                 string cellText = CleanText(cell.InnerText);
@@ -102,9 +110,16 @@ namespace MySchemaApp
             Console.WriteLine(" ");
         }
 
-        static public void BasicPrintTableRowData(HtmlNodeCollection cells)
+        static public void DefaultPrintTableRowData(HtmlNodeCollection cells)
         {
-            if (cells == null) return;
+            // Probably a header row like "Vecka 4, 2026"
+            if (cells.Count == 1)
+            {
+                Console.WriteLine(CleanText(cells[0].InnerText));
+                return;
+            }
+
+            // Prints text for each cell.
             foreach (var cell in cells)
             {
                 string cellText = CleanText(cell.InnerText);
