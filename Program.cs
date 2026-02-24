@@ -378,7 +378,7 @@ namespace MySchemaApp
                 Console.WriteLine("2. Jag vill att ALLA mina scheman ska starta från dagens datum: " +
                     (settings.StartDateTodayOnAll ? "Ja." : "Nej."));
 
-                Console.WriteLine("3. Jag vill att startup-schemat startar från dagens datum: " +
+                Console.WriteLine("3. Jag vill att mina Favorit-scheman startar från dagens datum vid uppstart: " +
                     (settings.StartDateTodayOnAll ? "Ja (pga. ovanstående Ja)." :
                     (settings.StartDateTodayStartupOnly ? "Ja." : "Nej.")));
 
@@ -405,7 +405,9 @@ namespace MySchemaApp
                         break;
 
                     case "4":
-                        //Senare
+                        SettingsInfo();
+                        Console.WriteLine("Tryck enter för att återgå till inställningar.");
+                        Console.ReadKey();
                         break;
                     
                     default:
@@ -413,6 +415,32 @@ namespace MySchemaApp
                 }
             }
             settingsManager.Save(settings);
+        }
+
+        static void SettingsInfo()
+        {
+            FullClearConsole();
+            var settings = settingsManager.Settings;
+            Console.WriteLine("Jag vill ha scheman som endast visar det viktiga: " +
+                    (settings.CustomizedTable ? "Ja." : "Nej."));
+            Console.WriteLine("Detta justerar så att schemat som skrivs ut endast visar viktig information när den är satt som \"Ja\"." +
+                " Detta innebär att celler såsom vilken lärare man har och diverse tomma celler inte kommar att följa med när schemat skrivs ut. " +
+                "Om man istället vill ha schemat printat på samma sätt som det ser ut på Kronox kan man istället sätta denna till \"Nej\".");
+            Console.WriteLine("Startvärde: Ja\n");
+
+            Console.WriteLine("Jag vill att ALLA mina scheman ska starta från dagens datum: " +
+                (settings.StartDateTodayOnAll ? "Ja." : "Nej."));
+            Console.WriteLine("Denna inställningen när den är satt som \"Ja\" gör att scheman som skrivs ut endast kommer att skriva ut rader från schemat vars datum inte skett ännu. " +
+                "Om det exempelvis är 2:a januari idag och schemat har en lektion den 1:a januari kommer den lektionen att ignoreras när schemat ska skrivas ut." +
+                "\nOBS: endast möjligt om länken du angett för schemat ursprungligen innehållt det hela schemat.");
+            Console.WriteLine("Startvärde: Nej\n");
+
+            Console.WriteLine("Jag vill att mina Favorit-scheman startar från dagens datum vid uppstart: " +
+                (settings.StartDateTodayOnAll ? "Ja (pga. ovanstående Ja)." :
+                (settings.StartDateTodayStartupOnly ? "Ja." : "Nej.")));
+            Console.WriteLine("Samma som ovanstående inställning men påverkar endast scheman du har satt som \"Favorit\". Denna inställningen är automatiskt " +
+                "satt som \"Ja\" ifall ovanstående inställning är satt som det då den inställningen gäller alla scheman.");
+            Console.WriteLine("Startvärde: Ja\n");
         }
 
         static void ShowAllSchemaTitles(List<Schema> schemas, string headermsg)
